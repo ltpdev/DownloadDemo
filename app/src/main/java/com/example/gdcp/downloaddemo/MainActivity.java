@@ -6,19 +6,25 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.gdcp.downloaddemo.adapter.FilelistAdapter;
 import com.example.gdcp.downloaddemo.entity.FileInfo;
 import com.example.gdcp.downloaddemo.service.DownloadService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
-    private Button btnStart;
-    private Button btnStop;
-    private TextView tvFileName;
-    private ProgressBar progressBar;
+    private ListView listView;
+    private List<FileInfo>fileInfoList;
+    private FilelistAdapter filelistAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,36 +36,24 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initData() {
-
-        progressBar.setMax(100);
+        fileInfoList=new ArrayList<>();
+        FileInfo fileInfo1=new FileInfo(0,"http://sw.bos.baidu.com/sw-search-sp/software/10eafbd67f16b/QQ_8.9.6.22404_setup.exe",
+                "QQsetup.exe",0,0);
+        FileInfo fileInfo2=new FileInfo(1,"http://sw.bos.baidu.com/sw-search-sp/software/41fb96fbfa410/QQMusic_15.6.0.0_Setup.exe",
+                "QQMusicSetup.exe",0,0);
+        FileInfo fileInfo3=new FileInfo(2,"http://sw.bos.baidu.com/sw-search-sp/software/e335feb5c2f01/WeChatSetup.exe",
+                "WeChatSetup.exe",0,0);
+        fileInfoList.add(fileInfo1);
+        fileInfoList.add(fileInfo2);
+        fileInfoList.add(fileInfo3);
+        filelistAdapter=new FilelistAdapter(this,fileInfoList);
+        listView.setAdapter(filelistAdapter);
     }
 
     private void initEvent() {
-        final FileInfo fileInfo=new FileInfo(0,"http://www.imooc.com/mobile/mukewang.apk",
-                "imooc.apk",0,0);
-        tvFileName.setText(fileInfo.getFileName());
-        btnStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent=new Intent(MainActivity.this, DownloadService.class);
-                intent.setAction(DownloadService.ACTION_START);
-                intent.putExtra("fileInfo",fileInfo);
-                startService(intent);
-            }
-        });
-
-        btnStop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent=new Intent(MainActivity.this, DownloadService.class);
-                intent.setAction(DownloadService.ACTION_STOP);
-                intent.putExtra("fileInfo",fileInfo);
-                startService(intent);
-            }
-        });
-
         IntentFilter intentFilter=new IntentFilter();
         intentFilter.addAction(DownloadService.ACTION_UPDATE);
+        intentFilter.addAction(DownloadService.ACTION_FINISHED);
         registerReceiver(broadcastReceiver,intentFilter);
     }
 
@@ -70,19 +64,27 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+
+
     private void initView() {
-        btnStart = (Button) findViewById(R.id.btn_start);
-        btnStop = (Button) findViewById(R.id.btn_stop);
-        tvFileName = (TextView) findViewById(R.id.tv_name_file);
-        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        listView= (ListView) findViewById(R.id.listview);
     }
 
     BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.getAction().equals(DownloadService.ACTION_UPDATE)){
-                int finished=intent.getIntExtra("finished",0);
-                progressBar.setProgress(finished);
+                long finished=intent.getLongExtra("finished",0);
+                int id=intent.getIntExtra("id",0);
+                filelistAdapter.updateProgress(id,finished);
+                //Log.i("dd", "onReceive: "+finished);
+                //progressBar.setProgress(finished);
+            }else if (intent.getAction().equals(DownloadService.ACTION_FINISHED)){
+                FileInfo fileInfo= (FileInfo) intent.getSerializableExtra("fileInfo");
+                filelistAdapter.updateProgress(fileInfo.getId(),100);
+                Log.i("dd", "onReceive: "+fileInfoList.get(fileInfo.getId()).getFileName()+"下载完毕");
+                Toast.makeText(MainActivity.this,fileInfoList.get(fileInfo.getId()).getFileName()+"下载完毕",
+                        Toast.LENGTH_SHORT).show();
             }
         }
     };

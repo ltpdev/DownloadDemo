@@ -10,14 +10,14 @@ public class FileInfo implements Serializable{
     private int id;
     private String url;
     private String fileName;
-    private int length;
+    private long length;
     //文件下载完成度
-    private int finished;
+    private long finished;
 
     public FileInfo() {
     }
 
-    public FileInfo(int id, String url, String fileName, int length, int finished) {
+    public FileInfo(int id, String url, String fileName, long length, long finished) {
         this.id = id;
         this.url = url;
         this.fileName = fileName;
@@ -49,19 +49,19 @@ public class FileInfo implements Serializable{
         this.fileName = fileName;
     }
 
-    public int getLength() {
+    public long getLength() {
         return length;
     }
 
-    public void setLength(int length) {
+    public void setLength(long length) {
         this.length = length;
     }
 
-    public int getFinished() {
+    public long getFinished() {
         return finished;
     }
 
-    public void setFinished(int finished) {
+    public void setFinished(long finished) {
         this.finished = finished;
     }
 }

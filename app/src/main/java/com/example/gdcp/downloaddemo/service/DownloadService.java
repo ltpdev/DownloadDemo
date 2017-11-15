@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Created by asus- on 2017/11/13.
@@ -25,10 +27,10 @@ public class DownloadService extends Service {
     public static final String ACTION_START = "action_start";
     public static final String ACTION_STOP = "action_stop";
     public static final String ACTION_UPDATE = "action_update";
+    public static final String ACTION_FINISHED = "action_finished";
     public static final String DOWNLOAD_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/downloads/";
     public static final int MSG_INIT = 0;
-    private DownloadTask downloadTask;
-
+    private Map<Integer,DownloadTask>taskMap=new LinkedHashMap<Integer,DownloadTask>();
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,9 +42,11 @@ public class DownloadService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent.getAction().equals(ACTION_START)) {
             FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
-            new InitThread(fileInfo).start();
+            InitThread initThread=new InitThread(fileInfo);
+            DownloadTask.executorService.execute(initThread);
         } else if (intent.getAction().equals(ACTION_STOP)) {
             FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("fileInfo");
+            DownloadTask downloadTask = taskMap.get(fileInfo.getId());
             if (downloadTask!=null){
                 downloadTask.paused=true;
             }
@@ -56,8 +60,9 @@ public class DownloadService extends Service {
             switch (msg.what) {
                 case MSG_INIT:
                     FileInfo fileInfo = (FileInfo) msg.obj;
-                    downloadTask=new DownloadTask(DownloadService.this,fileInfo);
+                    DownloadTask downloadTask = new DownloadTask(DownloadService.this, fileInfo, 3);
                     downloadTask.download();
+                    taskMap.put(fileInfo.getId(),downloadTask);
                     break;
             }
         }

@@ -18,11 +18,11 @@ public class ThreadDaoImpl implements ThreadDao{
     private DBHelper dbHelper;
 
     public ThreadDaoImpl(Context context) {
-        dbHelper=new DBHelper(context);
+        dbHelper=DBHelper.getInstance(context);
     }
 
     @Override
-    public void insertThread(ThreadInfo threadInfo) {
+    public synchronized void insertThread(ThreadInfo threadInfo) {
         SQLiteDatabase db=dbHelper.getWritableDatabase();
         db.execSQL("insert into thread_info(thread_id,url,start,end,finished) " +
                 "values(?,?,?,?,?)",
@@ -32,15 +32,15 @@ public class ThreadDaoImpl implements ThreadDao{
     }
 
     @Override
-    public void deleteThread(String url, int thread_id) {
+    public synchronized void deleteThread(String url) {
         SQLiteDatabase db=dbHelper.getWritableDatabase();
-        db.execSQL("delete from thread_info where url=? and thread_id=?" ,
-                new Object[]{url,thread_id});
+        db.execSQL("delete from thread_info where url=?" ,
+                new Object[]{url});
         db.close();
     }
 
     @Override
-    public void updateThread(String url, int thread_id, int finished) {
+    public synchronized void updateThread(String url, int thread_id, long finished) {
         SQLiteDatabase db=dbHelper.getWritableDatabase();
         db.execSQL("update thread_info set finished=? where url=? and thread_id=?" ,
                 new Object[]{finished,url,thread_id});
